@@ -49,21 +49,22 @@ void M_Display::sendCmd(byte cmd) {
 
 void M_Display::sendData(byte addr, byte dat) {
 
-  sendCmd(0x44); // Fixed Address
+  delay(1);
   digitalWrite(clk, LOW);
   digitalWrite(stb, LOW);
-  shiftOut(data, clk, LSBFIRST, 0xC0 | addr);
+  shiftOut(data, clk, LSBFIRST, MD_CMD_ADDR_SETTING | addr);
   shiftOut(data, clk, LSBFIRST, dat);
   delayMicroseconds(10);
   digitalWrite(stb, HIGH);
   delay(1);
 }
 
-void M_Display::mode(byte mode) { sendCmd(mode); }
+void M_Display::mode(byte mode) { sendCmd(MD_CMD_MODE_SETTING | mode); }
 
 void M_Display::setDisplay(bool isOn, byte intensity) {
 
-  sendCmd(0x80 | (isOn ? 8 : 0) | min(7, intensity));
+  sendCmd(MD_CMD_DISPLAY_CONTROL | (isOn ? MD_FLG_ON : MD_FLG_OFF) |
+          min(7, intensity));
 }
 
 void M_Display::clear() {
@@ -79,10 +80,11 @@ void M_Display::clear() {
 
 void M_Display::update() {
 
-  sendCmd(0x40); // Incremental Address
+  sendCmd(MD_CMD_DATA_SETTING | MD_FLG_NORMAL_OP | MD_FLG_INCREMENTAL_ADDR |
+          MD_FLG_WRITE);
   digitalWrite(clk, LOW);
   digitalWrite(stb, LOW);
-  shiftOut(data, clk, LSBFIRST, 0xC0);
+  shiftOut(data, clk, LSBFIRST, MD_CMD_ADDR_SETTING | 0x00);
 
   for (int i = 0; i < MD_DISPLAY_RAM_SIZE; i++)
     shiftOut(data, clk, LSBFIRST, buffer[i]);
