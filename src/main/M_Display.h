@@ -51,20 +51,22 @@ protected:
 
   virtual void writeDigit(byte digit, byte data) = 0;
 
+  // display ram buffer:
+  byte buffer[MD_DISPLAY_RAM_SIZE] = {0};
+
+  const DisplayFont FONT;
+
+private:
+
   // config:
   const byte TOTAL_DIGITS;
   const byte *const &LED_ADDR;
   const byte *const &LED_VAL;
 
-  // display ram buffer:
-  byte buffer[MD_DISPLAY_RAM_SIZE] = {0};
-
   // print system:
   byte str_buffer[MD_STRING_BUFFER_SIZE] = {0};
   byte cursor_pos = 0;
   byte frame_beg = 0;
-
-  const DisplayFont FONT;
 
   // 3 wire serial: 
   const byte stb;
