@@ -9,8 +9,8 @@ public:
   HM_Display(const byte _stb, const byte _clk, const byte _data,
              const HMD_config &_config, byte (*_getFont)(char) = DefaultFont);
 
-  void setSeg(bool isOn, byte seg, byte digit);
-  void toggleSeg(byte seg, byte digit);
+  void setSeg(bool isOn, byte seg, byte digit) override;
+  void toggleSeg(byte seg, byte digit) override;
 
 protected:
   void writeDigit(byte digit, byte data) override;
