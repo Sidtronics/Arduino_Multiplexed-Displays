@@ -24,5 +24,5 @@ void HM_Display::toggleSeg(byte seg, byte digit) {
 
 void HM_Display::writeDigit(byte digit, byte data) {
 
-  buffer[DIGIT_ADDR[digit]] = (buffer[DIGIT_ADDR[digit]] & 0x80) | FONT[data];
+  buffer[DIGIT_ADDR[digit]] = (buffer[DIGIT_ADDR[digit]] & 0x80) | getFont(data);
 }

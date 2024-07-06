@@ -26,5 +26,5 @@ void VM_Display::writeDigit(byte digit, byte data) {
 
   for (int i = 0; i < 7; i++)
     bitWrite(buffer[SEG_ADDR[digit][i]], DIGIT_BITPOS[digit],
-             bitRead(FONT[data], i));
+             bitRead(getFont(data), i));
 }

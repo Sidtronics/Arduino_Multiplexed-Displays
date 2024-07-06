@@ -7,7 +7,7 @@ M_Display::M_Display(
     :
 
       stb(_stb), clk(_clk), data(_data), TOTAL_DIGITS(_config.TOTAL_DIGITS),
-      LED_ADDR(_config.LED_ADDR), LED_VAL(_config.LED_VAL), FONT(_getFont)
+      LED_ADDR(_config.LED_ADDR), LED_VAL(_config.LED_VAL), getFont(_getFont)
 
 {
   pinMode(stb, OUTPUT);
@@ -25,7 +25,7 @@ M_Display::M_Display(
     :
 
       stb(_stb), clk(_clk), data(_data), TOTAL_DIGITS(_config.TOTAL_DIGITS),
-      LED_ADDR(_config.LED_ADDR), LED_VAL(_config.LED_VAL), FONT(_getFont)
+      LED_ADDR(_config.LED_ADDR), LED_VAL(_config.LED_VAL), getFont(_getFont)
 
 {
   pinMode(stb, OUTPUT);

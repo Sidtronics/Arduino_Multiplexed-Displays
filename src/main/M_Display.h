@@ -8,7 +8,6 @@
 #include "WProgram.h"
 #endif
 
-#include "../DisplayFont.h"
 #include "../fonts/Fonts.h"
 #include "MD_config.h"
 #include "MD_settings.h"
@@ -54,7 +53,7 @@ protected:
   // display ram buffer:
   byte buffer[MD_DISPLAY_RAM_SIZE] = {0};
 
-  const DisplayFont FONT;
+  byte (*getFont)(char);
 
 private:
 
