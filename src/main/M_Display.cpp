@@ -2,8 +2,8 @@
 
 M_Display::M_Display(
 
-    const byte _stb, const byte _clk, const byte _data,
-    const HMD_config &_config, byte (*_getFont)(char))
+    const uint8_t _stb, const uint8_t _clk, const uint8_t _data,
+    const HMD_config &_config, uint8_t (*_getFont)(char))
     :
 
       stb(_stb), clk(_clk), data(_data), TOTAL_DIGITS(_config.TOTAL_DIGITS),
@@ -20,8 +20,8 @@ M_Display::M_Display(
 
 M_Display::M_Display(
 
-    const byte _stb, const byte _clk, const byte _data,
-    const VMD_config &_config, byte (*_getFont)(char))
+    const uint8_t _stb, const uint8_t _clk, const uint8_t _data,
+    const VMD_config &_config, uint8_t (*_getFont)(char))
     :
 
       stb(_stb), clk(_clk), data(_data), TOTAL_DIGITS(_config.TOTAL_DIGITS),
@@ -36,7 +36,7 @@ M_Display::M_Display(
   digitalWrite(clk, LOW);
 }
 
-void M_Display::sendCmd(byte cmd) {
+void M_Display::_send_cmd(uint8_t cmd) {
 
   delay(1);
   digitalWrite(clk, LOW);
@@ -47,7 +47,7 @@ void M_Display::sendCmd(byte cmd) {
   delay(1);
 }
 
-void M_Display::sendData(byte addr, byte dat) {
+void M_Display::_send_data(uint8_t addr, uint8_t dat) {
 
   delay(1);
   digitalWrite(clk, LOW);
@@ -59,42 +59,40 @@ void M_Display::sendData(byte addr, byte dat) {
   delay(1);
 }
 
-void M_Display::mode(byte mode) { sendCmd(MD_CMD_MODE_SETTING | mode); }
+void M_Display::mode(uint8_t mode) { _send_cmd(MD_CMD_MODE_SETTING | mode); }
 
-void M_Display::setDisplay(bool isOn, byte intensity) {
+void M_Display::setDisplay(bool isOn, uint8_t intensity) {
 
-  sendCmd(MD_CMD_DISPLAY_CONTROL | (isOn ? MD_FLG_ON : MD_FLG_OFF) |
-          min(7, intensity));
+  _send_cmd(MD_CMD_DISPLAY_CONTROL | (isOn ? MD_FLG_ON : MD_FLG_OFF) |
+            (intensity > 7 ? 7 : intensity));
 }
 
-void M_Display::clear() {
+void M_Display::init(uint8_t intensity) {
 
-  for (int i = 0; i < MD_DISPLAY_RAM_SIZE; i++)
-    buffer[i] = 0x00;
+  memset(ram_buffer, 0, MD_DISPLAY_RAM_SIZE);
+  _reset_print_system();
 
-  cursor_pos = 0;
-  frame_beg = 0;
-
-  update();
+  setDisplay(true, intensity);
+  _update_ram();
 }
 
-void M_Display::update() {
+void M_Display::_update_ram() {
 
-  sendCmd(MD_CMD_DATA_SETTING | MD_FLG_NORMAL_OP | MD_FLG_INCREMENTAL_ADDR |
-          MD_FLG_WRITE);
+  _send_cmd(MD_CMD_DATA_SETTING | MD_FLG_NORMAL_OP | MD_FLG_INCREMENTAL_ADDR |
+            MD_FLG_WRITE);
   digitalWrite(clk, LOW);
   digitalWrite(stb, LOW);
   shiftOut(data, clk, LSBFIRST, MD_CMD_ADDR_SETTING | 0x00);
 
   for (int i = 0; i < MD_DISPLAY_RAM_SIZE; i++)
-    shiftOut(data, clk, LSBFIRST, buffer[i]);
+    shiftOut(data, clk, LSBFIRST, ram_buffer[i]);
 
   delayMicroseconds(10);
   digitalWrite(stb, HIGH);
   delay(1);
 }
 
-size_t M_Display::write(byte chr) {
+size_t M_Display::write(uint8_t chr) {
 
   if (cursor_pos == MD_STRING_BUFFER_SIZE)
     return 0;
@@ -102,33 +100,33 @@ size_t M_Display::write(byte chr) {
   str_buffer[cursor_pos] = chr;
 
   if (cursor_pos >= frame_beg && cursor_pos < frame_beg + TOTAL_DIGITS)
-    updateFrame();
+    _update_frame();
 
   cursor_pos++;
 
   return 1;
 }
 
-size_t M_Display::write(const byte *buf, size_t size) {
+size_t M_Display::write(const uint8_t *buf, size_t size) {
 
   if (cursor_pos == MD_STRING_BUFFER_SIZE)
     return 0;
 
-  byte n = size < MD_STRING_BUFFER_SIZE - cursor_pos
-               ? size
-               : MD_STRING_BUFFER_SIZE - cursor_pos;
+  uint8_t n = size < MD_STRING_BUFFER_SIZE - cursor_pos
+                  ? size
+                  : MD_STRING_BUFFER_SIZE - cursor_pos;
 
   memcpy(str_buffer + cursor_pos, buf, n);
 
   if (!(cursor_pos + n <= frame_beg || frame_beg + TOTAL_DIGITS <= cursor_pos))
-    updateFrame();
+    _update_frame();
 
   cursor_pos += size;
 
   return n;
 }
 
-void M_Display::updateFrame() {
+void M_Display::_update_frame() {
 
   for (int i = 0; i < TOTAL_DIGITS; ++i) {
 
@@ -138,38 +136,73 @@ void M_Display::updateFrame() {
       writeDigit(i, str_buffer[frame_beg + i]);
   }
 
-  update();
+  _update_ram();
 }
 
-void M_Display::scroll(bool dir, byte len) {
+void M_Display::scroll(bool dir, uint8_t len) {
 
   dir ? frame_beg += len : frame_beg -= len;
-
-  if (frame_beg < -MD_STRING_BUFFER_SIZE)
-    frame_beg = -MD_STRING_BUFFER_SIZE;
-
-  else if (frame_beg > MD_STRING_BUFFER_SIZE)
-    frame_beg = MD_STRING_BUFFER_SIZE;
-
-  updateFrame();
+  frame_beg = _clamp(frame_beg, -TOTAL_DIGITS, MD_STRING_BUFFER_SIZE);
+  _update_frame();
 }
 
-void M_Display::toggleLed(byte led) {
+void M_Display::home() {
 
-  buffer[LED_ADDR[led]] ^= LED_VAL[led];
-  sendData(LED_ADDR[led], buffer[LED_ADDR[led]]);
+  frame_beg = 0;
+  _update_frame();
 }
 
-void M_Display::setLed(bool isOn, byte led) {
+void M_Display::end() {
+
+  frame_beg = MD_STRING_BUFFER_SIZE - TOTAL_DIGITS;
+  _update_frame();
+}
+
+void M_Display::clear() {
+
+  _reset_print_system();
+  _update_frame();
+}
+
+void M_Display::setCursor(uint8_t pos) {
+
+  cursor_pos = _clamp(pos, 0, MD_STRING_BUFFER_SIZE);
+}
+
+void M_Display::toggleLed(uint8_t led) {
+
+  ram_buffer[LED_ADDR[led]] ^= LED_VAL[led];
+  _send_data(LED_ADDR[led], ram_buffer[LED_ADDR[led]]);
+}
+
+void M_Display::setLed(bool isOn, uint8_t led) {
 
   if (isOn) {
 
-    buffer[LED_ADDR[led]] |= LED_VAL[led];
-    sendData(LED_ADDR[led], buffer[LED_ADDR[led]]);
+    ram_buffer[LED_ADDR[led]] |= LED_VAL[led];
+    _send_data(LED_ADDR[led], ram_buffer[LED_ADDR[led]]);
 
   } else {
 
-    buffer[LED_ADDR[led]] &= (0xFF - LED_VAL[led]);
-    sendData(LED_ADDR[led], buffer[LED_ADDR[led]]);
+    ram_buffer[LED_ADDR[led]] &= (0xFF - LED_VAL[led]);
+    _send_data(LED_ADDR[led], ram_buffer[LED_ADDR[led]]);
   }
+}
+
+void M_Display::_reset_print_system() {
+
+  memset(str_buffer, 0, MD_STRING_BUFFER_SIZE);
+
+  cursor_pos = 0;
+  frame_beg = 0;
+}
+
+uint8_t M_Display::_clamp(int8_t val, int8_t min, int8_t max) {
+
+  if (val < min)
+    return min;
+  else if (val > max)
+    return max;
+  else
+    return val;
 }

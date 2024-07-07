@@ -1,6 +1,6 @@
-#include <Arduino.h> //for "byte"
+#include <stdint.h>
 
-byte DefaultFont(char asciiChar) {
+uint8_t DefaultFont(char asciiChar) {
 
   // case conversion
   asciiChar =

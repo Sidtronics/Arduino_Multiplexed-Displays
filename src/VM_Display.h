@@ -6,17 +6,17 @@
 class VM_Display : public M_Display {
 
 public:
-  VM_Display(const byte _stb, const byte _clk, const byte _data,
-             const VMD_config &_config, byte (*_getFont)(char) = DefaultFont);
+  VM_Display(const uint8_t _stb, const uint8_t _clk, const uint8_t _data,
+             const VMD_config &_config,
+             uint8_t (*_getFont)(char) = DefaultFont);
 
-  void setSeg(bool isOn, byte seg, byte digit) override;
-  void toggleSeg(byte seg, byte digit) override;
+  void setSeg(bool isOn, uint8_t seg, uint8_t digit) override;
+  void toggleSeg(uint8_t seg, uint8_t digit) override;
+  void writeDigit(uint8_t digit, uint8_t data) override;
 
-protected:
-  void writeDigit(byte digit, byte data) override;
-
-  const byte *const DIGIT_BITPOS;
-  const byte *const *const SEG_ADDR;
+private:
+  const uint8_t *const DIGIT_BITPOS;
+  const uint8_t *const *const SEG_ADDR;
 };
 
 #endif
