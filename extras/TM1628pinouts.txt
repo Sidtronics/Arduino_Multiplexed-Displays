@@ -1,7 +1,0 @@
-red = 5v
-brown = stb
-yellow = data
-black = gnd
-orange = clk
-
-mode = 3
